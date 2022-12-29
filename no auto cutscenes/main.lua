@@ -82,7 +82,7 @@ function mod:onNpcDeath(entityNpc)
   end
   
   -- mega satan spawns void portal seed: K703 ACNE (hard)
-  if mod.state.blockCutsceneMegaSatan and mod:isMegaSatan() then
+  if mod.state.blockCutsceneMegaSatan and entityNpc.Type == EntityType.ENTITY_MEGA_SATAN_2 and mod:isMegaSatan() then
     local room = game:GetRoom()
     room:SetClear(true) -- this stops the cutscene from triggering, it also stops the game from spawning its own chest+void portal
     mod:addActiveCharges(1)
@@ -95,7 +95,7 @@ function mod:onNpcDeath(entityNpc)
     if rng:RandomInt(100) < mod.state.probabilityVoidMegaSatan then
       mod:spawnVoidPortal(room:GetGridPosition(centerIdx + (2 * 15))) -- 2 spaces lower
     end
-  elseif entityNpc.Variant == 0 and entityNpc.SubType == 0 and mod.state.blockCutsceneBeast and mod:isTheBeast() then -- 951.0.0 is the beast, filter out other 951.x.x
+  elseif mod.state.blockCutsceneBeast and entityNpc.Type == EntityType.ENTITY_BEAST and entityNpc.Variant == 0 and entityNpc.SubType == 0 and mod:isTheBeast() then -- 951.0.0 is the beast, filter out other 951.x.x
     -- room:SetClear from here leaves the screen completely white, you also can't remove the beast w/o triggering the cutscene
     mod.isBeastDead = true
     mod:addActiveCharges(2)
