@@ -12,6 +12,7 @@ mod.state.blockCutsceneBeast = true
 mod.state.blockCutsceneMegaSatan = true
 mod.state.probabilityVoidBeast = 50
 mod.state.probabilityVoidMegaSatan = 50
+mod.state.spawnFoolCardMegaSatan = false
 
 function mod:onGameStart()
   if mod:HasData() then
@@ -32,6 +33,9 @@ function mod:onGameStart()
       end
       if math.type(state.probabilityVoidMegaSatan) == 'integer' and state.probabilityVoidMegaSatan >= 0 and state.probabilityVoidMegaSatan <= 100 then
         mod.state.probabilityVoidMegaSatan = state.probabilityVoidMegaSatan
+      end
+      if type(state.spawnFoolCardMegaSatan) == 'boolean' then
+        mod.state.spawnFoolCardMegaSatan = state.spawnFoolCardMegaSatan
       end
     end
   end
@@ -94,6 +98,10 @@ function mod:onNpcDeath(entityNpc)
     rng:SetSeed(room:GetSpawnSeed(), mod.rngShiftIdx)
     if rng:RandomInt(100) < mod.state.probabilityVoidMegaSatan then
       mod:spawnVoidPortal(room:GetGridPosition(centerIdx + (2 * 15))) -- 2 spaces lower
+    end
+    
+    if mod.state.spawnFoolCardMegaSatan then
+      Isaac.Spawn(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_TAROTCARD, Card.CARD_FOOL, Isaac.GetFreeNearPosition(Isaac.GetRandomPosition(), 3), Vector.Zero, nil)
     end
   elseif mod.state.blockCutsceneBeast and entityNpc.Type == EntityType.ENTITY_BEAST and entityNpc.Variant == 0 and entityNpc.SubType == 0 and mod:isTheBeast() then -- 951.0.0 is the beast, filter out other 951.x.x
     -- room:SetClear from here leaves the screen completely white, you also can't remove the beast w/o triggering the cutscene
@@ -176,8 +184,8 @@ function mod:setupModConfigMenu()
     }
   )
   for _, v in ipairs({
-                        { title = 'Mega Satan', block = 'blockCutsceneMegaSatan', probability = 'probabilityVoidMegaSatan' },
-                        { title = 'The Beast' , block = 'blockCutsceneBeast'    , probability = 'probabilityVoidBeast' }
+                        { title = 'Mega Satan', block = 'blockCutsceneMegaSatan', fool = 'spawnFoolCardMegaSatan', probability = 'probabilityVoidMegaSatan' },
+                        { title = 'The Beast' , block = 'blockCutsceneBeast'    , fool = nil                     , probability = 'probabilityVoidBeast' }
                     })
   do
     ModConfigMenu.AddSpace(mod.Name, 'Settings')
@@ -200,6 +208,26 @@ function mod:setupModConfigMenu()
         Info = { 'Block or allow the specified cutscene' }
       }
     )
+    if v.fool then
+      ModConfigMenu.AddSetting(
+        mod.Name,
+        'Settings',
+        {
+          Type = ModConfigMenu.OptionType.BOOLEAN,
+          CurrentSetting = function()
+            return mod.state[v.fool]
+          end,
+          Display = function()
+            return (mod.state[v.fool] and 'Spawn' or 'Do not spawn') .. ' fool card'
+          end,
+          OnChange = function(b)
+            mod.state[v.fool] = b
+            mod:save()
+          end,
+          Info = { 'Do you want to spawn 0 - The Fool', 'after defeating Mega Satan?' }
+        }
+      )
+    end
     ModConfigMenu.AddSetting(
       mod.Name,
       'Settings',

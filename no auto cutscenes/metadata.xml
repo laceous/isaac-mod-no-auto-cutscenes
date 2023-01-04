@@ -23,10 +23,16 @@ This mod was inspired by [url=https://steamcommunity.com/sharedfiles/filedetails
 
 For challenges, trophies will spawn instead of chests.
 
-Mod Config Menu can be used to selectively block the cutscenes after Mega Satan and/or The Beast. You can change the void portal spawning probability. And you can choose to apply your settings to challenges or not.
+Mod Config Menu can be used to:
+[list]
+    [*]block the cutscenes after Mega Satan and/or The Beast
+    [*]change the void portal spawning probability
+    [*]spawn 0 - The Fool after Mega Satan (lets you teleport back to the main map)
+    [*]apply your settings to challenges or not
+[/list]
 
 Note: Even if you choose to allow the Mega Satan cutscene, the game may still decide to spawn a chest and void portal instead.</description>
-    <version>1.2</version>
+    <version>1.3</version>
     <visibility>Public</visibility>
     <tag id="Lua"/>
     <tag id="Bosses"/>
