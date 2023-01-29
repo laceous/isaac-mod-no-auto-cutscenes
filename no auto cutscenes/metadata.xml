@@ -11,6 +11,7 @@ This mod was inspired by [url=https://steamcommunity.com/sharedfiles/filedetails
     [*]Mega Satan
     [list]
         [*]A chest will spawn in the boss room
+        [*]Optionally, a fool card will spawn
         [*]Optionally, a void portal will also spawn
     [/list]
     [*]The Beast
@@ -31,8 +32,10 @@ Mod Config Menu can be used to:
     [*]apply your settings to challenges or not
 [/list]
 
-Note: Even if you choose to allow the Mega Satan cutscene, the game may still decide to spawn a chest and void portal instead.</description>
-    <version>1.3</version>
+Note: Even if you choose to allow the Mega Satan cutscene, the game may still decide to spawn a chest and void portal instead.
+
+Note: Walking into the chest after The Beast will end the game, but it won't increment your win streak. You'll need to go fight Delirium if you want a +1.</description>
+    <version>1.4</version>
     <visibility>Public</visibility>
     <tag id="Lua"/>
     <tag id="Bosses"/>

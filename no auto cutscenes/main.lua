@@ -41,9 +41,24 @@ function mod:onGameStart()
   end
 end
 
-function mod:onGameExit()
+function mod:onGameExit(shouldSave)
   mod:save()
   mod.isBeastDead = false
+  
+  if game:IsGreedMode() or mod:isAnyChallenge() then
+    return
+  end
+  
+  -- MC_POST_GAME_END doesn't work here
+  if not shouldSave and mod:hasAlivePlayer() then -- successful ending
+    local level = game:GetLevel()
+    local roomDesc = level:GetCurrentRoomDesc()
+    local stage = level:GetStage()
+    
+    if stage == LevelStage.STAGE8 and roomDesc.GridIndex == mod.livingRoomGridIdx then
+      Isaac.ExecuteCommand('cutscene 26') -- beast ending
+    end
+  end
 end
 
 function mod:save()
@@ -134,6 +149,21 @@ function mod:addActiveCharges(num)
       end
     end
   end
+end
+
+function mod:hasAlivePlayer()
+  for i = 0, game:GetNumPlayers() - 1 do
+    local player = game:GetPlayer(i)
+    local isBaby = player:GetBabySkin() ~= BabySubType.BABY_UNASSIGNED
+    local isCoopGhost = player:IsCoopGhost()
+    local isChild = player.Parent ~= nil
+    local isDead = player:IsDead()
+    if not isBaby and not isCoopGhost and not isChild and not isDead then
+      return true
+    end
+  end
+  
+  return false
 end
 
 function mod:isMegaSatan()
