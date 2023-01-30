@@ -118,7 +118,7 @@ function mod:onNpcDeath(entityNpc)
     if mod.state.spawnFoolCardMegaSatan then
       Isaac.Spawn(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_TAROTCARD, Card.CARD_FOOL, Isaac.GetFreeNearPosition(Isaac.GetRandomPosition(), 3), Vector.Zero, nil)
     end
-  elseif mod.state.blockCutsceneBeast and entityNpc.Type == EntityType.ENTITY_BEAST and entityNpc.Variant == 0 and entityNpc.SubType == 0 and mod:isTheBeast() then -- 951.0.0 is the beast, filter out other 951.x.x
+  elseif mod.state.blockCutsceneBeast and entityNpc.Type == EntityType.ENTITY_BEAST and entityNpc.Variant == 0 and mod:isTheBeast() then -- 951.0.x is the beast, filter out other 951.x.x
     -- room:SetClear from here leaves the screen completely white, you also can't remove the beast w/o triggering the cutscene
     mod.isBeastDead = true
     mod:addActiveCharges(2)
