@@ -101,18 +101,20 @@ function mod:onNpcDeath(entityNpc)
   end
   
   -- mega satan spawns void portal seed: K703 ACNE (hard)
-  if mod.state.blockCutsceneMegaSatan and entityNpc.Type == EntityType.ENTITY_MEGA_SATAN_2 and mod:isMegaSatan() then
-    local room = game:GetRoom()
-    room:SetClear(true) -- this stops the cutscene from triggering, it also stops the game from spawning its own chest+void portal
-    mod:addActiveCharges(1)
-    
-    local centerIdx = room:GetGridIndex(room:GetCenterPos())
-    mod:spawnChestOrTrophy(room:GetGridPosition(centerIdx))
-    
-    local rng = RNG()
-    rng:SetSeed(room:GetSpawnSeed(), mod.rngShiftIdx)
-    if rng:RandomInt(100) < mod.state.probabilityVoidMegaSatan then
-      mod:spawnVoidPortal(room:GetGridPosition(centerIdx + (2 * 15))) -- 2 spaces lower
+  if entityNpc.Type == EntityType.ENTITY_MEGA_SATAN_2 and mod:isMegaSatan() then
+    if mod.state.blockCutsceneMegaSatan then
+      local room = game:GetRoom()
+      room:SetClear(true) -- this stops the cutscene from triggering, it also stops the game from spawning its own chest+void portal
+      mod:addActiveCharges(1)
+      
+      local centerIdx = room:GetGridIndex(room:GetCenterPos())
+      mod:spawnChestOrTrophy(room:GetGridPosition(centerIdx))
+      
+      local rng = RNG()
+      rng:SetSeed(room:GetSpawnSeed(), mod.rngShiftIdx)
+      if rng:RandomInt(100) < mod.state.probabilityVoidMegaSatan then
+        mod:spawnVoidPortal(room:GetGridPosition(centerIdx + (2 * 15))) -- 2 spaces lower
+      end
     end
     
     if mod.state.spawnFoolCardMegaSatan then
