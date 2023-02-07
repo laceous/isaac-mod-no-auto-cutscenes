@@ -56,7 +56,7 @@ function mod:onGameExit(shouldSave)
     local stage = level:GetStage()
     
     if stage == LevelStage.STAGE8 and roomDesc.GridIndex == mod.livingRoomGridIdx then
-      Isaac.ExecuteCommand('cutscene 26') -- beast ending
+      game:End(14) -- beast ending, gives +1 to win streak unlike Isaac.ExecuteCommand('cutscene 26')
     end
   end
 end
