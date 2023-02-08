@@ -144,7 +144,7 @@ function mod:addActiveCharges(num)
     local player = game:GetPlayer(i)
     
     for _, slot in ipairs({ ActiveSlot.SLOT_PRIMARY, ActiveSlot.SLOT_SECONDARY, ActiveSlot.SLOT_POCKET }) do -- SLOT_POCKET2
-      for j = num, 1, -1 do
+      for j = 1, num do
         if player:NeedsCharge(slot) then
           player:SetActiveCharge(player:GetActiveCharge(slot) + player:GetBatteryCharge(slot) + 1, slot)
         end
