@@ -50,7 +50,8 @@ function mod:onGameExit(shouldSave)
   end
   
   -- MC_POST_GAME_END doesn't work here
-  if not shouldSave and mod:hasAlivePlayer() then -- successful ending
+  -- going into a chest makes the player invisible unlike restarting
+  if not shouldSave and mod:hasInvisibleAlivePlayer() then -- successful ending
     local level = game:GetLevel()
     local roomDesc = level:GetCurrentRoomDesc()
     local stage = level:GetStage()
@@ -67,6 +68,40 @@ end
 
 function mod:onNewLevel()
   mod.isBeastDead = false
+end
+
+function mod:onPreNewRoom(entityType, variant, subType, gridIdx, seed)
+  if game:IsGreedMode() or (not mod.state.applyToChallenges and mod:isAnyChallenge()) then
+    return
+  end
+  
+  local level = game:GetLevel()
+  local roomDesc = level:GetCurrentRoomDesc()
+  local stage = level:GetStage()
+  
+  if stage == LevelStage.STAGE8 and roomDesc.GridIndex == mod.livingRoomGridIdx and mod.isBeastDead then
+    if entityType == EntityType.ENTITY_DOGMA then
+      return { EntityType.ENTITY_GENERIC_PROP, 3, 0 } -- couch, stop doors from being removed
+    end
+  end
+end
+
+function mod:onNewRoom()
+  if game:IsGreedMode() or (not mod.state.applyToChallenges and mod:isAnyChallenge()) then
+    return
+  end
+  
+  local level = game:GetLevel()
+  local roomDesc = level:GetCurrentRoomDesc()
+  local stage = level:GetStage()
+  
+  if stage == LevelStage.STAGE8 and roomDesc.GridIndex == mod.livingRoomGridIdx and mod.isBeastDead then
+    for _, v in ipairs(Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, -1, -1, false, false)) do
+      if v.Variant == 3 or v.Variant == 4 then -- couch/tv
+        v:Remove()
+      end
+    end
+  end
 end
 
 -- drop chest after MC_POST_NEW_ROOM
@@ -153,14 +188,15 @@ function mod:addActiveCharges(num)
   end
 end
 
-function mod:hasAlivePlayer()
+function mod:hasInvisibleAlivePlayer()
   for i = 0, game:GetNumPlayers() - 1 do
     local player = game:GetPlayer(i)
     local isBaby = player:GetBabySkin() ~= BabySubType.BABY_UNASSIGNED
     local isCoopGhost = player:IsCoopGhost()
     local isChild = player.Parent ~= nil
     local isDead = player:IsDead()
-    if not isBaby and not isCoopGhost and not isChild and not isDead then
+    local isVisible = player.Visible
+    if not isBaby and not isCoopGhost and not isChild and not isDead and not isVisible then
       return true
     end
   end
@@ -185,7 +221,7 @@ function mod:isTheBeast()
          roomDesc.Data.Type == RoomType.ROOM_DUNGEON and
          roomDesc.Data.Variant == 666 and
          roomDesc.Data.Name == 'Beast Room' and
-         roomDesc.GridIndex == GridRooms.ROOM_SECRET_EXIT_IDX
+         (roomDesc.GridIndex == GridRooms.ROOM_SECRET_EXIT_IDX or roomDesc.GridIndex == GridRooms.ROOM_DEBUG_IDX)
 end
 
 function mod:isAnyChallenge()
@@ -287,6 +323,8 @@ end
 mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, mod.onGameStart)
 mod:AddCallback(ModCallbacks.MC_PRE_GAME_EXIT, mod.onGameExit)
 mod:AddCallback(ModCallbacks.MC_POST_NEW_LEVEL, mod.onNewLevel)
+mod:AddCallback(ModCallbacks.MC_PRE_ROOM_ENTITY_SPAWN, mod.onPreNewRoom)
+mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, mod.onNewRoom)
 mod:AddCallback(ModCallbacks.MC_POST_UPDATE, mod.onUpdate)
 mod:AddCallback(ModCallbacks.MC_POST_NPC_DEATH, mod.onNpcDeath, EntityType.ENTITY_MEGA_SATAN_2)
 mod:AddCallback(ModCallbacks.MC_POST_NPC_DEATH, mod.onNpcDeath, EntityType.ENTITY_BEAST)
