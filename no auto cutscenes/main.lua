@@ -148,7 +148,7 @@ function mod:onNpcDeath(entityNpc)
       local rng = RNG()
       rng:SetSeed(room:GetSpawnSeed(), mod.rngShiftIdx)
       if rng:RandomInt(100) < mod.state.probabilityVoidMegaSatan then
-        mod:spawnVoidPortal(room:GetGridPosition(centerIdx + (2 * 15))) -- 2 spaces lower
+        mod:spawnVoidPortal(room:GetGridPosition(centerIdx + (2 * room:GetGridWidth()))) -- 2 spaces lower
       end
     end
     
