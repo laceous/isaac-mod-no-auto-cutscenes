@@ -119,12 +119,12 @@ function mod:onUpdate()
     mod.isBeastDead = false
     
     local centerIdx = room:GetGridIndex(room:GetCenterPos())
-    mod:spawnChestOrTrophy(room:GetGridPosition(centerIdx - 15)) -- 1 space higher, don't cover dropped rewards
+    mod:spawnChestOrTrophy(room:GetGridPosition(centerIdx - (1 * room:GetGridWidth()))) -- 1 space higher, don't cover dropped rewards
     
     local rng = RNG()
     rng:SetSeed(room:GetSpawnSeed(), mod.rngShiftIdx) -- GetAwardSeed, GetDecorationSeed
     if rng:RandomInt(100) < mod.state.probabilityVoidBeast then
-      mod:spawnVoidPortal(room:GetGridPosition(centerIdx + 15)) -- 1 space lower
+      mod:spawnVoidPortal(room:GetGridPosition(centerIdx + (1 * room:GetGridWidth()))) -- 1 space lower
     end
   end
 end
