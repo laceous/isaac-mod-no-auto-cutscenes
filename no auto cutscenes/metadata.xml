@@ -11,7 +11,7 @@ This mod was inspired by [url=https://steamcommunity.com/sharedfiles/filedetails
     [*]Mega Satan
     [list]
         [*]A chest will spawn in the boss room
-        [*]Optionally, a fool card will spawn
+        [*]A door will spawn allowing you to exit the room
         [*]Optionally, a void portal will also spawn
     [/list]
     [*]The Beast
@@ -28,12 +28,11 @@ Mod Config Menu can be used to:
 [list]
     [*]block the cutscenes after Mega Satan and/or The Beast
     [*]change the void portal spawning probability
-    [*]spawn 0 - The Fool after Mega Satan (lets you teleport back to the main map)
     [*]apply your settings to challenges or not
 [/list]
 
 Note: Even if you choose to allow the Mega Satan cutscene, the game may still decide to spawn a chest and void portal instead.</description>
-    <version>1.13</version>
+    <version>1.14</version>
     <visibility>Public</visibility>
     <tag id="Lua"/>
     <tag id="Bosses"/>

@@ -12,30 +12,21 @@ mod.state.blockCutsceneBeast = true
 mod.state.blockCutsceneMegaSatan = true
 mod.state.probabilityVoidBeast = 50
 mod.state.probabilityVoidMegaSatan = 50
-mod.state.spawnFoolCardMegaSatan = false
 
 function mod:onGameStart()
   if mod:HasData() then
     local _, state = pcall(json.decode, mod:LoadData())
     
     if type(state) == 'table' then
-      if type(state.applyToChallenges) == 'boolean' then
-        mod.state.applyToChallenges = state.applyToChallenges
+      for _, v in ipairs({ 'applyToChallenges', 'blockCutsceneBeast', 'blockCutsceneMegaSatan' }) do
+        if type(state[v]) == 'boolean' then
+          mod.state[v] = state[v]
+        end
       end
-      if type(state.blockCutsceneBeast) == 'boolean' then
-        mod.state.blockCutsceneBeast = state.blockCutsceneBeast
-      end
-      if type(state.blockCutsceneMegaSatan) == 'boolean' then
-        mod.state.blockCutsceneMegaSatan = state.blockCutsceneMegaSatan
-      end
-      if math.type(state.probabilityVoidBeast) == 'integer' and state.probabilityVoidBeast >= 0 and state.probabilityVoidBeast <= 100 then
-        mod.state.probabilityVoidBeast = state.probabilityVoidBeast
-      end
-      if math.type(state.probabilityVoidMegaSatan) == 'integer' and state.probabilityVoidMegaSatan >= 0 and state.probabilityVoidMegaSatan <= 100 then
-        mod.state.probabilityVoidMegaSatan = state.probabilityVoidMegaSatan
-      end
-      if type(state.spawnFoolCardMegaSatan) == 'boolean' then
-        mod.state.spawnFoolCardMegaSatan = state.spawnFoolCardMegaSatan
+      for _, v in ipairs({ 'probabilityVoidBeast', 'probabilityVoidMegaSatan' }) do
+        if math.type(state[v]) == 'integer' and state[v] >= 0 and state[v] <= 100 then
+          mod.state[v] = state[v]
+        end
       end
     end
   end
@@ -92,6 +83,7 @@ function mod:onNewRoom()
   end
   
   local level = game:GetLevel()
+  local room = level:GetCurrentRoom()
   local roomDesc = level:GetCurrentRoomDesc()
   local stage = level:GetStage()
   
@@ -101,6 +93,8 @@ function mod:onNewRoom()
         v:Remove()
       end
     end
+  elseif mod:isMegaSatan() and room:IsClear() then
+    mod:spawnMegaSatanDoorExit()
   end
 end
 
@@ -129,19 +123,20 @@ function mod:onUpdate()
   end
 end
 
--- filtered to ENTITY_MEGA_SATAN_2 and ENTITY_BEAST
-function mod:onNpcDeath(entityNpc)
+-- this happens after the previous MC_POST_NPC_DEATH implementation, and should have better support for more variability
+function mod:onPreSpawnAward()
   if game:IsGreedMode() or (not mod.state.applyToChallenges and mod:isAnyChallenge()) then
     return
   end
   
   -- mega satan spawns void portal seed: K703 ACNE (hard)
-  if entityNpc.Type == EntityType.ENTITY_MEGA_SATAN_2 and mod:isMegaSatan() then
+  if mod:isMegaSatan() then
+    mod:spawnMegaSatanDoorExit()
+    
     if mod.state.blockCutsceneMegaSatan then
-      local room = game:GetRoom()
-      room:SetClear(true) -- this stops the cutscene from triggering, it also stops the game from spawning its own chest+void portal
       mod:addActiveCharges(1)
       
+      local room = game:GetRoom()
       local centerIdx = room:GetGridIndex(room:GetCenterPos())
       mod:spawnChestOrTrophy(room:GetGridPosition(centerIdx))
       
@@ -150,16 +145,15 @@ function mod:onNpcDeath(entityNpc)
       if rng:RandomInt(100) < mod.state.probabilityVoidMegaSatan then
         mod:spawnVoidPortal(room:GetGridPosition(centerIdx + (2 * room:GetGridWidth()))) -- 2 spaces lower
       end
+      
+      return true
     end
-    
-    if mod.state.spawnFoolCardMegaSatan then
-      Isaac.Spawn(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_TAROTCARD, Card.CARD_FOOL, Isaac.GetFreeNearPosition(Isaac.GetRandomPosition(), 3), Vector.Zero, nil)
-    end
-  elseif mod.state.blockCutsceneBeast and entityNpc.Type == EntityType.ENTITY_BEAST and entityNpc.Variant == 0 and mod:isTheBeast() then -- 951.0.x is the beast, filter out other 951.x.x
-    -- room:SetClear from here leaves the screen completely white, you also can't remove the beast w/o triggering the cutscene
+  elseif mod:isTheBeast() and mod.state.blockCutsceneBeast then
     mod.isBeastDead = true
     mod:addActiveCharges(2)
     game:StartRoomTransition(mod.livingRoomGridIdx, Direction.NO_DIRECTION, RoomTransitionAnim.FADE, nil, -1) -- go back to the living room, removes the white screen
+    
+    return true
   end
 end
 
@@ -172,6 +166,23 @@ function mod:spawnVoidPortal(pos)
   local portal = Isaac.GridSpawn(GridEntityType.GRID_TRAPDOOR, 1, Isaac.GetFreeNearPosition(pos, 3), true)
   portal.VarData = 1
   portal:GetSprite():Load('gfx/grid/voidtrapdoor.anm2', true)
+end
+
+function mod:spawnMegaSatanDoorExit()
+  local level = game:GetLevel()
+  local room = level:GetCurrentRoom()
+  
+  -- this goes to DOWN0 because it's the only available door slot
+  if room:TrySpawnBlueWombDoor(false, true, true) then -- TrySpawnBossRushDoor
+    local door = room:GetDoor(DoorSlot.DOWN0)
+    if door then
+      local sprite = door:GetSprite()
+      door.TargetRoomType = RoomType.ROOM_DEFAULT
+      door.TargetRoomIndex = level:GetPreviousRoomIndex() -- GetStartingRoomIndex
+      sprite:Load('gfx/grid/door_24_megasatandoor.anm2', true)
+      sprite:Play('Opened', true)
+    end
+  end
 end
 
 function mod:addActiveCharges(num)
@@ -252,8 +263,8 @@ function mod:setupModConfigMenu()
     }
   )
   for _, v in ipairs({
-                        { title = 'Mega Satan', block = 'blockCutsceneMegaSatan', fool = 'spawnFoolCardMegaSatan', probability = 'probabilityVoidMegaSatan' },
-                        { title = 'The Beast' , block = 'blockCutsceneBeast'    , fool = nil                     , probability = 'probabilityVoidBeast' }
+                        { title = 'Mega Satan', block = 'blockCutsceneMegaSatan', probability = 'probabilityVoidMegaSatan' },
+                        { title = 'The Beast' , block = 'blockCutsceneBeast'    , probability = 'probabilityVoidBeast' }
                     })
   do
     ModConfigMenu.AddSpace(mod.Name, 'Settings')
@@ -276,26 +287,6 @@ function mod:setupModConfigMenu()
         Info = { 'Block or allow the specified cutscene' }
       }
     )
-    if v.fool then
-      ModConfigMenu.AddSetting(
-        mod.Name,
-        'Settings',
-        {
-          Type = ModConfigMenu.OptionType.BOOLEAN,
-          CurrentSetting = function()
-            return mod.state[v.fool]
-          end,
-          Display = function()
-            return (mod.state[v.fool] and 'Spawn' or 'Do not spawn') .. ' fool card'
-          end,
-          OnChange = function(b)
-            mod.state[v.fool] = b
-            mod:save()
-          end,
-          Info = { 'Do you want to spawn 0 - The Fool', 'after defeating Mega Satan?' }
-        }
-      )
-    end
     ModConfigMenu.AddSetting(
       mod.Name,
       'Settings',
@@ -326,8 +317,7 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_LEVEL, mod.onNewLevel)
 mod:AddCallback(ModCallbacks.MC_PRE_ROOM_ENTITY_SPAWN, mod.onPreNewRoom)
 mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, mod.onNewRoom)
 mod:AddCallback(ModCallbacks.MC_POST_UPDATE, mod.onUpdate)
-mod:AddCallback(ModCallbacks.MC_POST_NPC_DEATH, mod.onNpcDeath, EntityType.ENTITY_MEGA_SATAN_2)
-mod:AddCallback(ModCallbacks.MC_POST_NPC_DEATH, mod.onNpcDeath, EntityType.ENTITY_BEAST)
+mod:AddCallback(ModCallbacks.MC_PRE_SPAWN_CLEAN_AWARD, mod.onPreSpawnAward)
 
 if ModConfigMenu then
   mod:setupModConfigMenu()
