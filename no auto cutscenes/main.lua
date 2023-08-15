@@ -2,8 +2,8 @@ local mod = RegisterMod('No Auto-Cutscenes', 1)
 local json = require('json')
 local game = Game()
 
-mod.isBeastDead = false
-mod.livingRoomGridIdx = 109 -- living room @ home
+mod.isTheBeastClear = false
+mod.allowNormalClear = false
 mod.rngShiftIdx = 35
 
 mod.state = {}
@@ -34,23 +34,35 @@ end
 
 function mod:onGameExit(shouldSave)
   mod:save()
-  mod.isBeastDead = false
+  mod.isTheBeastClear = false
   
   if game:IsGreedMode() or mod:isAnyChallenge() then
     return
   end
   
-  -- MC_POST_GAME_END doesn't work here
+  -- MC_POST_GAME_END works for mega satan, but not the beast
+  -- MC_PRE_GAME_EXIT works for both
   -- going into a chest makes the player invisible unlike restarting
   if not shouldSave and mod:hasInvisibleAlivePlayer() then -- successful ending
     local level = game:GetLevel()
-    local roomDesc = level:GetCurrentRoomDesc()
+    local room = level:GetCurrentRoom()
     local stage = level:GetStage()
     
-    if stage == LevelStage.STAGE8 and roomDesc.GridIndex == mod.livingRoomGridIdx then
-      game:End(14) -- beast ending, gives +1 to win streak unlike Isaac.ExecuteCommand('cutscene 26')
+    if mod:isMegaSatan() then -- STAGE6
+      mod.allowNormalClear = true
+      
+      -- this can add +2 to the win streak
+      room:TriggerClear(true)
+    elseif stage == LevelStage.STAGE8 and room:IsCurrentRoomLastBoss() then
+      mod.allowNormalClear = true
+      
+      level.LeaveDoor = DoorSlot.NO_DOOR_SLOT
+      game:ChangeRoom(GridRooms.ROOM_SECRET_EXIT_IDX, -1)
+      room:TriggerClear(true)
     end
   end
+  
+  mod.allowNormalClear = false
 end
 
 function mod:save()
@@ -58,7 +70,7 @@ function mod:save()
 end
 
 function mod:onNewLevel()
-  mod.isBeastDead = false
+  mod.isTheBeastClear = false
 end
 
 function mod:onPreNewRoom(entityType, variant, subType, gridIdx, seed)
@@ -67,10 +79,10 @@ function mod:onPreNewRoom(entityType, variant, subType, gridIdx, seed)
   end
   
   local level = game:GetLevel()
-  local roomDesc = level:GetCurrentRoomDesc()
+  local room = level:GetCurrentRoom()
   local stage = level:GetStage()
   
-  if stage == LevelStage.STAGE8 and roomDesc.GridIndex == mod.livingRoomGridIdx and mod.isBeastDead then
+  if stage == LevelStage.STAGE8 and room:IsCurrentRoomLastBoss() and mod.isTheBeastClear then
     if entityType == EntityType.ENTITY_DOGMA then
       return { EntityType.ENTITY_GENERIC_PROP, 3, 0 } -- couch, stop doors from being removed
     end
@@ -84,10 +96,9 @@ function mod:onNewRoom()
   
   local level = game:GetLevel()
   local room = level:GetCurrentRoom()
-  local roomDesc = level:GetCurrentRoomDesc()
   local stage = level:GetStage()
   
-  if stage == LevelStage.STAGE8 and roomDesc.GridIndex == mod.livingRoomGridIdx and mod.isBeastDead then
+  if stage == LevelStage.STAGE8 and room:IsCurrentRoomLastBoss() and mod.isTheBeastClear then
     for _, v in ipairs(Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, -1, -1, false, false)) do
       if v.Variant == 3 or v.Variant == 4 then -- couch/tv
         v:Remove()
@@ -106,11 +117,10 @@ function mod:onUpdate()
   
   local level = game:GetLevel()
   local room = level:GetCurrentRoom()
-  local roomDesc = level:GetCurrentRoomDesc()
   local stage = level:GetStage()
   
-  if stage == LevelStage.STAGE8 and roomDesc.GridIndex == mod.livingRoomGridIdx and mod.isBeastDead then
-    mod.isBeastDead = false
+  if stage == LevelStage.STAGE8 and room:IsCurrentRoomLastBoss() and mod.isTheBeastClear then
+    mod.isTheBeastClear = false
     
     local centerIdx = room:GetGridIndex(room:GetCenterPos())
     mod:spawnChestOrTrophy(room:GetGridPosition(centerIdx - (1 * room:GetGridWidth()))) -- 1 space higher, don't cover dropped rewards
@@ -129,14 +139,18 @@ function mod:onPreSpawnAward()
     return
   end
   
+  if mod.allowNormalClear then
+    return
+  end
+  
+  local level = game:GetLevel()
+  local room = level:GetCurrentRoom()
+  
   -- mega satan spawns void portal seed: K703 ACNE (hard)
   if mod:isMegaSatan() then
     mod:spawnMegaSatanDoorExit()
     
     if mod.state.blockCutsceneMegaSatan then
-      mod:addActiveCharges(1)
-      
-      local room = game:GetRoom()
       local centerIdx = room:GetGridIndex(room:GetCenterPos())
       mod:spawnChestOrTrophy(room:GetGridPosition(centerIdx))
       
@@ -149,11 +163,53 @@ function mod:onPreSpawnAward()
       return true
     end
   elseif mod:isTheBeast() and mod.state.blockCutsceneBeast then
-    mod.isBeastDead = true
-    mod:addActiveCharges(2)
-    game:StartRoomTransition(mod.livingRoomGridIdx, Direction.NO_DIRECTION, RoomTransitionAnim.FADE, nil, -1) -- go back to the living room, removes the white screen
+    mod.isTheBeastClear = true
+    mod:addActiveCharges(1) -- 1 + 1 = 2
+    
+    local lastBossRoom = level:GetRooms():Get(level:GetLastBossRoomListIndex())
+    game:StartRoomTransition(lastBossRoom.SafeGridIndex, Direction.NO_DIRECTION, RoomTransitionAnim.FADE, nil, mod:getDimension(lastBossRoom)) -- go back to the living room, removes the white screen
     
     return true
+  end
+end
+
+-- usage: no-auto-cutscenes unlock mega satan
+-- usage: no-auto-cutscenes unlock the beast
+function mod:onExecuteCmd(cmd, parameters)
+  local seeds = game:GetSeeds()
+  local level = game:GetLevel()
+  local room = level:GetCurrentRoom()
+  cmd = string.lower(cmd)
+  parameters = string.lower(parameters)
+  
+  if cmd == 'no-auto-cutscenes' then
+    if not game:IsGreedMode() and not seeds:IsCustomRun() and game:GetVictoryLap() == 0 then -- not greed mode, challenge, seeded run, or victory lap
+      if parameters == 'unlock mega satan' then
+        Isaac.ExecuteCommand('stage 11') -- 11a
+        level.LeaveDoor = DoorSlot.NO_DOOR_SLOT
+        game:ChangeRoom(GridRooms.ROOM_MEGA_SATAN_IDX, -1)
+        mod.allowNormalClear = true
+        room:TriggerClear(true) -- may or may not end the game
+        game:End(8) -- mega satan
+        
+        print('Unlocked Mega Satan completion mark')
+        return
+      elseif parameters == 'unlock the beast' then
+        Isaac.ExecuteCommand('stage 13') -- 13a
+        level.LeaveDoor = DoorSlot.NO_DOOR_SLOT
+        game:ChangeRoom(GridRooms.ROOM_SECRET_EXIT_IDX, -1)
+        mod.allowNormalClear = true
+        room:TriggerClear(true) -- ends the game unless overridden
+        
+        print('Unlocked The Beast completion mark')
+        return 
+      end
+      
+      print('Usage: unlock mega satan, unlock the beast')
+      return
+    end
+    
+    print('Not available in greed mode, challenges, seeded runs, or victory laps')
   end
 end
 
@@ -213,6 +269,22 @@ function mod:hasInvisibleAlivePlayer()
   end
   
   return false
+end
+
+function mod:getDimension(roomDesc)
+  local level = game:GetLevel()
+  local ptrHash = GetPtrHash(roomDesc)
+  
+  -- 0: main dimension
+  -- 1: secondary dimension, used by downpour mirror dimension and mines escape sequence
+  -- 2: death certificate dimension
+  for i = 0, 2 do
+    if ptrHash == GetPtrHash(level:GetRoomByIdx(roomDesc.SafeGridIndex, i)) then
+      return i
+    end
+  end
+  
+  return -1
 end
 
 function mod:isMegaSatan()
@@ -318,6 +390,7 @@ mod:AddCallback(ModCallbacks.MC_PRE_ROOM_ENTITY_SPAWN, mod.onPreNewRoom)
 mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, mod.onNewRoom)
 mod:AddCallback(ModCallbacks.MC_POST_UPDATE, mod.onUpdate)
 mod:AddCallback(ModCallbacks.MC_PRE_SPAWN_CLEAN_AWARD, mod.onPreSpawnAward)
+mod:AddCallback(ModCallbacks.MC_EXECUTE_CMD, mod.onExecuteCmd)
 
 if ModConfigMenu then
   mod:setupModConfigMenu()

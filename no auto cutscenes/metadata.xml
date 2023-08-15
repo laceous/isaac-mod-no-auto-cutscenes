@@ -3,8 +3,17 @@
     <name>No Auto-Cutscenes</name>
     <directory>no auto cutscenes</directory>
     <id>2908633985</id>
-    <description>[h1]WARNING! Do not use this mod if you are trying to get your Mega Satan or Beast unlocks! The unlocks/achievements/completion marks are tied to the cutscenes.[/h1]
+    <description>[h1]Update: Mega Satan and The Beast unlocks are now supported![/h1]
 
+To get your unlocks/achievements/completion marks, make sure you walk into the chest rather than taking the void portal. Check your completion marks on the pause menu, and make your choice.
+
+You can also give yourself the completion marks later on with these console commands (which will also end the game):
+[code]
+no-auto-cutscenes unlock mega satan
+no-auto-cutscenes unlock the beast
+[/code]
+
+[hr][/hr]
 This mod was inspired by [url=https://steamcommunity.com/sharedfiles/filedetails/?id=2667845009]NO Mega Satan auto cutscene[/url] and [url=https://steamcommunity.com/sharedfiles/filedetails/?id=938928749]AlwaysVoid[/url]. It can block the cutscenes from automatically playing after Mega Satan and The Beast.
 
 [list]
@@ -32,7 +41,7 @@ Mod Config Menu can be used to:
 [/list]
 
 Note: Even if you choose to allow the Mega Satan cutscene, the game may still decide to spawn a chest and void portal instead.</description>
-    <version>1.14</version>
+    <version>1.15</version>
     <visibility>Public</visibility>
     <tag id="Lua"/>
     <tag id="Bosses"/>
