@@ -229,7 +229,8 @@ function mod:spawnMegaSatanDoorExit()
   local room = level:GetCurrentRoom()
   
   -- this goes to DOWN0 because it's the only available door slot
-  if room:TrySpawnBlueWombDoor(false, true, true) then -- TrySpawnBossRushDoor
+  -- DOWN0 can sometimes be taken in challenges
+  if room:GetDoor(DoorSlot.DOWN0) == nil and room:TrySpawnBlueWombDoor(false, true, true) then -- TrySpawnBossRushDoor
     local door = room:GetDoor(DoorSlot.DOWN0)
     if door then
       local sprite = door:GetSprite()
