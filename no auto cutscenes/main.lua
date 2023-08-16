@@ -2,7 +2,7 @@ local mod = RegisterMod('No Auto-Cutscenes', 1)
 local json = require('json')
 local game = Game()
 
-mod.isTheBeastClear = false
+mod.isBeastClear = false
 mod.allowNormalClear = false
 mod.rngShiftIdx = 35
 
@@ -34,7 +34,7 @@ end
 
 function mod:onGameExit(shouldSave)
   mod:save()
-  mod.isTheBeastClear = false
+  mod.isBeastClear = false
   
   if game:IsGreedMode() or mod:isAnyChallenge() then
     return
@@ -46,14 +46,13 @@ function mod:onGameExit(shouldSave)
   if not shouldSave and mod:hasInvisibleAlivePlayer() then -- successful ending
     local level = game:GetLevel()
     local room = level:GetCurrentRoom()
-    local stage = level:GetStage()
     
-    if mod:isMegaSatan() then -- STAGE6
+    if mod:isMegaSatan() then
       mod.allowNormalClear = true
       
       -- this can add +2 to the win streak
       room:TriggerClear(true)
-    elseif stage == LevelStage.STAGE8 and room:IsCurrentRoomLastBoss() then
+    elseif mod:isLivingRoom() then
       mod.allowNormalClear = true
       
       level.LeaveDoor = DoorSlot.NO_DOOR_SLOT
@@ -70,7 +69,7 @@ function mod:save()
 end
 
 function mod:onNewLevel()
-  mod.isTheBeastClear = false
+  mod.isBeastClear = false
 end
 
 function mod:onPreNewRoom(entityType, variant, subType, gridIdx, seed)
@@ -78,11 +77,7 @@ function mod:onPreNewRoom(entityType, variant, subType, gridIdx, seed)
     return
   end
   
-  local level = game:GetLevel()
-  local room = level:GetCurrentRoom()
-  local stage = level:GetStage()
-  
-  if stage == LevelStage.STAGE8 and room:IsCurrentRoomLastBoss() and mod.isTheBeastClear then
+  if mod:isLivingRoom() and mod.isBeastClear then
     if entityType == EntityType.ENTITY_DOGMA then
       return { EntityType.ENTITY_GENERIC_PROP, 3, 0 } -- couch, stop doors from being removed
     end
@@ -94,11 +89,9 @@ function mod:onNewRoom()
     return
   end
   
-  local level = game:GetLevel()
-  local room = level:GetCurrentRoom()
-  local stage = level:GetStage()
+  local room = game:GetRoom()
   
-  if stage == LevelStage.STAGE8 and room:IsCurrentRoomLastBoss() and mod.isTheBeastClear then
+  if mod:isLivingRoom() and mod.isBeastClear then
     for _, v in ipairs(Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, -1, -1, false, false)) do
       if v.Variant == 3 or v.Variant == 4 then -- couch/tv
         v:Remove()
@@ -115,12 +108,10 @@ function mod:onUpdate()
     return
   end
   
-  local level = game:GetLevel()
-  local room = level:GetCurrentRoom()
-  local stage = level:GetStage()
+  local room = game:GetRoom()
   
-  if stage == LevelStage.STAGE8 and room:IsCurrentRoomLastBoss() and mod.isTheBeastClear then
-    mod.isTheBeastClear = false
+  if mod:isLivingRoom() and mod.isBeastClear then
+    mod.isBeastClear = false
     
     local centerIdx = room:GetGridIndex(room:GetCenterPos())
     mod:spawnChestOrTrophy(room:GetGridPosition(centerIdx - (1 * room:GetGridWidth()))) -- 1 space higher, don't cover dropped rewards
@@ -163,7 +154,7 @@ function mod:onPreSpawnAward()
       return true
     end
   elseif mod:isTheBeast() and mod.state.blockCutsceneBeast then
-    mod.isTheBeastClear = true
+    mod.isBeastClear = true
     mod:addActiveCharges(1) -- 1 + 1 = 2
     
     local lastBossRoom = level:GetRooms():Get(level:GetLastBossRoomListIndex())
@@ -306,6 +297,14 @@ function mod:isTheBeast()
          roomDesc.Data.Variant == 666 and
          roomDesc.Data.Name == 'Beast Room' and
          (roomDesc.GridIndex == GridRooms.ROOM_SECRET_EXIT_IDX or roomDesc.GridIndex == GridRooms.ROOM_DEBUG_IDX)
+end
+
+function mod:isLivingRoom()
+  local level = game:GetLevel()
+  local room = level:GetCurrentRoom()
+  
+  return level:GetStage() == LevelStage.STAGE8 and
+         room:IsCurrentRoomLastBoss()
 end
 
 function mod:isAnyChallenge()
