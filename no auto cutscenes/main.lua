@@ -78,7 +78,7 @@ function mod:onPreNewRoom(entityType, variant, subType, gridIdx, seed)
   end
   
   if mod:isLivingRoom() and mod.isBeastClear then
-    if entityType == EntityType.ENTITY_DOGMA then
+    if entityType == EntityType.ENTITY_DOGMA or (entityType == EntityType.ENTITY_GENERIC_PROP and variant == 4) then -- dogma or tv
       return { EntityType.ENTITY_GENERIC_PROP, 3, 0 } -- couch, stop doors from being removed
     end
   end
