@@ -7,6 +7,8 @@
 
 To get your unlocks/achievements/completion marks, make sure you walk into the chest rather than taking the void portal. Check your completion marks on the pause menu, and make your choice.
 
+Update: If you have Repentogon, you'll get your unlocks/achievements/completion marks immediately without having to walk into the chest.
+
 You can also give yourself the completion marks later on with these console commands (which will also end the game):
 [code]
 no-auto-cutscenes unlock mega satan
@@ -41,7 +43,7 @@ Mod Config Menu can be used to:
 [/list]
 
 Note: Even if you choose to allow the Mega Satan cutscene, the game may still decide to spawn a chest and void portal instead.</description>
-    <version>1.18</version>
+    <version>1.19</version>
     <visibility>Public</visibility>
     <tag id="Lua"/>
     <tag id="Bosses"/>

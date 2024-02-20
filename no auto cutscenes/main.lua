@@ -48,16 +48,22 @@ function mod:onGameExit(shouldSave)
     local room = level:GetCurrentRoom()
     
     if mod:isMegaSatan() then
-      mod.allowNormalClear = true
-      
-      -- this can add +2 to the win streak
-      room:TriggerClear(true)
+      if not REPENTOGON then
+        mod.allowNormalClear = true
+        
+        -- this can add +2 to the win streak
+        room:TriggerClear(true)
+      end
     elseif mod:isLivingRoom() then
-      mod.allowNormalClear = true
-      
-      level.LeaveDoor = DoorSlot.NO_DOOR_SLOT
-      game:ChangeRoom(GridRooms.ROOM_SECRET_EXIT_IDX, -1)
-      room:TriggerClear(true)
+      if not REPENTOGON then
+        mod.allowNormalClear = true
+        
+        level.LeaveDoor = DoorSlot.NO_DOOR_SLOT
+        game:ChangeRoom(GridRooms.ROOM_SECRET_EXIT_IDX, -1)
+        room:TriggerClear(true)
+      else
+        game:End(Ending.BEAST)
+      end
     end
   end
   
@@ -121,6 +127,10 @@ function mod:onUpdate()
     if rng:RandomInt(100) < mod.state.probabilityVoidBeast then
       mod:spawnVoidPortal(room:GetGridPosition(centerIdx + (1 * room:GetGridWidth()))) -- 1 space lower
     end
+    
+    if not mod:isAnyChallenge() then
+      mod:doRepentogonPostBeastLogic()
+    end
   end
 end
 
@@ -151,6 +161,11 @@ function mod:onPreSpawnAward()
         mod:spawnVoidPortal(room:GetGridPosition(centerIdx + (2 * room:GetGridWidth()))) -- 2 spaces lower
       end
       
+      -- alt: MC_PRE_MEGA_SATAN_ENDING
+      if not mod:isAnyChallenge() then
+        mod:doRepentogonPostMegaSatanLogic()
+      end
+      
       return true
     end
   elseif mod:isTheBeast() and mod.state.blockCutsceneBeast then
@@ -164,9 +179,199 @@ function mod:onPreSpawnAward()
   end
 end
 
+function mod:doRepentogonPostMegaSatanLogic()
+  if REPENTOGON then
+    local gameData = Isaac.GetPersistentGameData()
+    gameData:IncreaseEventCounter(EventCounter.MEGA_SATAN_KILLS, 1)
+    
+    local playerTypeAchievements = {
+      [PlayerType.PLAYER_ISAAC] = Achievement.CRY_BABY,
+      [PlayerType.PLAYER_MAGDALENE] = Achievement.RED_BABY,
+      [PlayerType.PLAYER_CAIN] = Achievement.GREEN_BABY,
+      [PlayerType.PLAYER_JUDAS] = Achievement.BROWN_BABY,
+      [PlayerType.PLAYER_BLACKJUDAS] = Achievement.BROWN_BABY,
+      [PlayerType.PLAYER_BLUEBABY] = Achievement.BLUE_COOP_BABY,
+      [PlayerType.PLAYER_EVE] = Achievement.LIL_BABY,
+      [PlayerType.PLAYER_SAMSON] = Achievement.RAGE_BABY,
+      [PlayerType.PLAYER_AZAZEL] = Achievement.BLACK_BABY,
+      [PlayerType.PLAYER_LAZARUS] = Achievement.LONG_BABY,
+      [PlayerType.PLAYER_LAZARUS2] = Achievement.LONG_BABY,
+      [PlayerType.PLAYER_EDEN] = Achievement.YELLOW_BABY,
+      [PlayerType.PLAYER_THELOST] = Achievement.WHITE_BABY,
+      [PlayerType.PLAYER_LILITH] = Achievement.BIG_BABY,
+      [PlayerType.PLAYER_KEEPER] = Achievement.NOOSE_BABY,
+      [PlayerType.PLAYER_APOLLYON] = Achievement.MORT_BABY,
+      [PlayerType.PLAYER_THEFORGOTTEN] = Achievement.BOUND_BABY,
+      [PlayerType.PLAYER_THESOUL] = Achievement.BOUND_BABY,
+      [PlayerType.PLAYER_BETHANY] = Achievement.GLOWING_BABY,
+      [PlayerType.PLAYER_JACOB] = Achievement.ILLUSION_BABY,
+      [PlayerType.PLAYER_ESAU] = Achievement.ILLUSION_BABY,
+      [PlayerType.PLAYER_ISAAC_B] = Achievement.MEGA_CHEST,
+      [PlayerType.PLAYER_MAGDALENE_B] = Achievement.QUEEN_OF_HEARTS,
+      [PlayerType.PLAYER_CAIN_B] = Achievement.GOLDEN_PILLS,
+      [PlayerType.PLAYER_JUDAS_B] = Achievement.BLACK_SACK,
+      [PlayerType.PLAYER_BLUEBABY_B] = Achievement.CHARMING_POOP,
+      [PlayerType.PLAYER_EVE_B] = Achievement.HORSE_PILLS,
+      [PlayerType.PLAYER_SAMSON_B] = Achievement.CRANE_GAME,
+      [PlayerType.PLAYER_AZAZEL_B] = Achievement.HELL_GAME,
+      [PlayerType.PLAYER_LAZARUS_B] = Achievement.WOODEN_CHEST,
+      [PlayerType.PLAYER_LAZARUS2_B] = Achievement.WOODEN_CHEST,
+      [PlayerType.PLAYER_EDEN_B] = Achievement.WILD_CARD,
+      [PlayerType.PLAYER_THELOST_B] = Achievement.HAUNTED_CHEST,
+      [PlayerType.PLAYER_LILITH_B] = Achievement.FOOLS_GOLD,
+      [PlayerType.PLAYER_KEEPER_B] = Achievement.GOLDEN_PENNIES,
+      [PlayerType.PLAYER_APOLLYON_B] = Achievement.ROTTEN_BEGGAR,
+      [PlayerType.PLAYER_THEFORGOTTEN_B] = Achievement.GOLDEN_BATTERIES,
+      [PlayerType.PLAYER_THESOUL_B] = Achievement.GOLDEN_BATTERIES,
+      [PlayerType.PLAYER_BETHANY_B] = Achievement.CONFESSIONAL,
+      [PlayerType.PLAYER_JACOB_B] = Achievement.GOLDEN_TRINKETS,
+      [PlayerType.PLAYER_JACOB2_B] = Achievement.GOLDEN_TRINKETS,
+    }
+    
+    for _, player in ipairs(PlayerManager.GetPlayers()) do
+      local isBaby = player:GetBabySkin() ~= BabySubType.BABY_UNASSIGNED
+      local isChild = player.Parent ~= nil
+      if not isBaby and not isChild then
+        local playerType = player:GetPlayerType()
+        local completionType = CompletionType.MEGA_SATAN
+        local completionMark = game.Difficulty == Difficulty.DIFFICULTY_NORMAL and 1 or 2 -- DIFFICULTY_HARD
+        if completionMark > Isaac.GetCompletionMark(playerType, completionType) then
+          Isaac.SetCompletionMark(playerType, completionType, completionMark)
+        end
+        
+        -- mega satan + player type
+        local playerTypeAchievement = playerTypeAchievements[playerType]
+        if playerTypeAchievement and not gameData:Unlocked(playerTypeAchievement) then
+          gameData:TryUnlock(playerTypeAchievement)
+        end
+      end
+    end
+    
+    -- mega satan
+    if not gameData:Unlocked(Achievement.APOLLYON) then
+      gameData:TryUnlock(Achievement.APOLLYON)
+    end
+    
+    -- mega satan + negative
+    if gameData:Unlocked(Achievement.THE_NEGATIVE) then
+      for _, achievement in ipairs({ Achievement.CHALLENGE_26_I_RULE, Achievement.CHALLENGE_31_BACKASSWARDS, Achievement.CHALLENGE_34_ULTRA_HARD }) do
+        if not gameData:Unlocked(achievement) then
+          gameData:TryUnlock(achievement)
+        end
+      end
+    end
+    
+    -- mega satan + all regular characters
+    local allRegularCharactersBeatMegaSatan = true
+    for _, playerType in ipairs({
+                                 PlayerType.PLAYER_ISAAC,
+                                 PlayerType.PLAYER_MAGDALENE,
+                                 PlayerType.PLAYER_CAIN,
+                                 PlayerType.PLAYER_JUDAS,
+                                 PlayerType.PLAYER_BLUEBABY,
+                                 PlayerType.PLAYER_EVE,
+                                 PlayerType.PLAYER_SAMSON,
+                                 PlayerType.PLAYER_AZAZEL,
+                                 PlayerType.PLAYER_LAZARUS,
+                                 PlayerType.PLAYER_EDEN,
+                                 PlayerType.PLAYER_THELOST,
+                                 PlayerType.PLAYER_LILITH,
+                                 PlayerType.PLAYER_KEEPER,
+                                 PlayerType.PLAYER_APOLLYON,
+                                 PlayerType.PLAYER_THEFORGOTTEN,
+                                 PlayerType.PLAYER_BETHANY,
+                                 PlayerType.PLAYER_JACOB,
+                               })
+    do
+      -- alt: check achievements
+      if Isaac.GetCompletionMark(playerType, CompletionType.MEGA_SATAN) <= 0 then
+        allRegularCharactersBeatMegaSatan = false
+        break
+      end
+    end
+    if allRegularCharactersBeatMegaSatan and not gameData:Unlocked(Achievement.MEGA_BLAST) then
+      gameData:TryUnlock(Achievement.MEGA_BLAST)
+    end
+  end
+end
+
+function mod:doRepentogonPostBeastLogic()
+  if REPENTOGON then
+    local gameData = Isaac.GetPersistentGameData()
+    gameData:IncreaseEventCounter(EventCounter.BEAST_KILLS, 1)
+    
+    local playerTypeAchievements = {
+      [PlayerType.PLAYER_ISAAC] = Achievement.OPTIONS,
+      [PlayerType.PLAYER_MAGDALENE] = Achievement.CANDY_HEART,
+      [PlayerType.PLAYER_CAIN] = Achievement.A_POUND_OF_FLESH,
+      [PlayerType.PLAYER_JUDAS] = Achievement.REDEMPTION,
+      [PlayerType.PLAYER_BLACKJUDAS] = Achievement.REDEMPTION,
+      [PlayerType.PLAYER_BLUEBABY] = Achievement.MONTEZUMAS_REVENGE,
+      [PlayerType.PLAYER_EVE] = Achievement.CRACKED_ORB,
+      [PlayerType.PLAYER_SAMSON] = Achievement.EMPTY_HEART,
+      [PlayerType.PLAYER_AZAZEL] = Achievement.LIL_ABADDON,
+      [PlayerType.PLAYER_LAZARUS] = Achievement.ASTRAL_PROJECTION,
+      [PlayerType.PLAYER_LAZARUS2] = Achievement.ASTRAL_PROJECTION,
+      [PlayerType.PLAYER_EDEN] = Achievement.EVERYTHING_JAR,
+      [PlayerType.PLAYER_THELOST] = Achievement.HUNGRY_SOUL,
+      [PlayerType.PLAYER_LILITH] = Achievement.C_SECTION,
+      [PlayerType.PLAYER_KEEPER] = Achievement.KEEPERS_BOX,
+      [PlayerType.PLAYER_APOLLYON] = Achievement.WORM_FRIEND,
+      [PlayerType.PLAYER_THEFORGOTTEN] = Achievement.SPIRIT_SHACKLES,
+      [PlayerType.PLAYER_THESOUL] = Achievement.SPIRIT_SHACKLES,
+      [PlayerType.PLAYER_BETHANY] = Achievement.JAR_OF_WISPS,
+      [PlayerType.PLAYER_JACOB] = Achievement.FRIEND_FINDER,
+      [PlayerType.PLAYER_ESAU] = Achievement.FRIEND_FINDER,
+      [PlayerType.PLAYER_ISAAC_B] = Achievement.GLITCHED_CROWN,
+      [PlayerType.PLAYER_MAGDALENE_B] = Achievement.BELLY_JELLY,
+      [PlayerType.PLAYER_CAIN_B] = Achievement.BLUE_KEY,
+      [PlayerType.PLAYER_JUDAS_B] = Achievement.SANGUINE_BOND,
+      [PlayerType.PLAYER_BLUEBABY_B] = Achievement.THE_SWARM,
+      [PlayerType.PLAYER_EVE_B] = Achievement.HEARTBREAK,
+      [PlayerType.PLAYER_SAMSON_B] = Achievement.LARYNX,
+      [PlayerType.PLAYER_AZAZEL_B] = Achievement.AZAZELS_RAGE,
+      [PlayerType.PLAYER_LAZARUS_B] = Achievement.SALVATION,
+      [PlayerType.PLAYER_LAZARUS2_B] = Achievement.SALVATION,
+      [PlayerType.PLAYER_EDEN_B] = Achievement.TMTRAINER,
+      [PlayerType.PLAYER_THELOST_B] = Achievement.SACRED_ORB,
+      [PlayerType.PLAYER_LILITH_B] = Achievement.TWISTED_PAIR,
+      [PlayerType.PLAYER_KEEPER_B] = Achievement.STRAWMAN,
+      [PlayerType.PLAYER_APOLLYON_B] = Achievement.ECHO_CHAMBER,
+      [PlayerType.PLAYER_THEFORGOTTEN_B] = Achievement.ISAACS_TOMB,
+      [PlayerType.PLAYER_THESOUL_B] = Achievement.ISAACS_TOMB,
+      [PlayerType.PLAYER_BETHANY_B] = Achievement.VENGEFUL_SPIRIT,
+      [PlayerType.PLAYER_JACOB_B] = Achievement.ESAU_JR,
+      [PlayerType.PLAYER_JACOB2_B] = Achievement.ESAU_JR,
+    }
+    
+    for _, player in ipairs(PlayerManager.GetPlayers()) do
+      local isBaby = player:GetBabySkin() ~= BabySubType.BABY_UNASSIGNED
+      local isChild = player.Parent ~= nil
+      if not isBaby and not isChild then
+        local playerType = player:GetPlayerType()
+        local completionType = CompletionType.BEAST
+        local completionMark = game.Difficulty == Difficulty.DIFFICULTY_NORMAL and 1 or 2 -- DIFFICULTY_HARD
+        if completionMark > Isaac.GetCompletionMark(playerType, completionType) then
+          Isaac.SetCompletionMark(playerType, completionType, completionMark)
+        end
+        
+        -- beast + player type
+        local playerTypeAchievement = playerTypeAchievements[playerType]
+        if playerTypeAchievement and not gameData:Unlocked(playerTypeAchievement) then
+          gameData:TryUnlock(playerTypeAchievement)
+        end
+      end
+    end
+  end
+end
+
 -- usage: no-auto-cutscenes unlock mega satan
 -- usage: no-auto-cutscenes unlock the beast
 function mod:onExecuteCmd(cmd, parameters)
+  if not mod:isInGame() then
+    return
+  end
+  
   local seeds = game:GetSeeds()
   local level = game:GetLevel()
   local room = level:GetCurrentRoom()
@@ -181,7 +386,7 @@ function mod:onExecuteCmd(cmd, parameters)
         game:ChangeRoom(GridRooms.ROOM_MEGA_SATAN_IDX, -1)
         mod.allowNormalClear = true
         room:TriggerClear(true) -- may or may not end the game
-        game:End(8) -- mega satan
+        game:End(8) -- Ending.MEGA_SATAN
         
         print('Unlocked Mega Satan completion mark')
         return
@@ -202,6 +407,14 @@ function mod:onExecuteCmd(cmd, parameters)
     
     print('Not available in greed mode, challenges, seeded runs, or victory laps')
   end
+end
+
+function mod:isInGame()
+  if REPENTOGON then
+    return Isaac.IsInGame()
+  end
+  
+  return true
 end
 
 function mod:spawnChestOrTrophy(pos)
@@ -394,4 +607,21 @@ mod:AddCallback(ModCallbacks.MC_EXECUTE_CMD, mod.onExecuteCmd)
 
 if ModConfigMenu then
   mod:setupModConfigMenu()
+end
+
+if REPENTOGON then
+  function mod:onConsoleAutocomplete(cmd, parameters)
+    cmd = string.lower(cmd)
+    
+    if cmd == 'no-auto-cutscenes' then
+      return { 'unlock mega satan', 'unlock the beast' }
+    end
+  end
+  
+  function mod:registerCommands()
+    Console.RegisterCommand('no-auto-cutscenes', 'Give Mega Satan or The Beast unlocks', 'Give Mega Satan or The Beast unlocks', false, AutocompleteType.CUSTOM)
+  end
+  
+  mod:registerCommands()
+  mod:AddCallback(ModCallbacks.MC_CONSOLE_AUTOCOMPLETE, mod.onConsoleAutocomplete)
 end
