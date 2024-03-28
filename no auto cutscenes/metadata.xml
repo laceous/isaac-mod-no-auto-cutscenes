@@ -43,7 +43,7 @@ Mod Config Menu can be used to:
 [/list]
 
 Note: Even if you choose to allow the Mega Satan cutscene, the game may still decide to spawn a chest and void portal instead.</description>
-    <version>1.19</version>
+    <version>1.20</version>
     <visibility>Public</visibility>
     <tag id="Lua"/>
     <tag id="Bosses"/>

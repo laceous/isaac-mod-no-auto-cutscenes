@@ -128,7 +128,7 @@ function mod:onUpdate()
       mod:spawnVoidPortal(room:GetGridPosition(centerIdx + (1 * room:GetGridWidth()))) -- 1 space lower
     end
     
-    if not mod:isAnyChallenge() then
+    if not mod:isAnyChallenge() and game:GetVictoryLap() == 0 then
       mod:doRepentogonPostBeastLogic()
     end
   end
@@ -162,7 +162,7 @@ function mod:onPreSpawnAward()
       end
       
       -- alt: MC_PRE_MEGA_SATAN_ENDING
-      if not mod:isAnyChallenge() then
+      if not mod:isAnyChallenge() and game:GetVictoryLap() == 0 then
         mod:doRepentogonPostMegaSatanLogic()
       end
       
