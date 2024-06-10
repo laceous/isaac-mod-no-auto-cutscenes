@@ -376,7 +376,7 @@ end
 
 -- start ModConfigMenu --
 function mod:setupModConfigMenu()
-  for _, v in ipairs({ 'Settings' }) do
+  for _, v in ipairs({ 'Settings', 'Mom' }) do
     ModConfigMenu.RemoveSubcategory(mod.Name, v)
   end
   ModConfigMenu.AddSetting(
@@ -443,6 +443,39 @@ function mod:setupModConfigMenu()
       }
     )
   end
+  ModConfigMenu.AddText(mod.Name, 'Mom', 'There\'s an auto-cutscene after fighting')
+  ModConfigMenu.AddText(mod.Name, 'Mom', 'mom the first time. You can bypass this')
+  ModConfigMenu.AddText(mod.Name, 'Mom', 'by unlocking the achievement below.')
+  ModConfigMenu.AddSpace(mod.Name, 'Mom')
+  ModConfigMenu.AddSetting(
+    mod.Name,
+    'Mom',
+    {
+      Type = ModConfigMenu.OptionType.BOOLEAN,
+      CurrentSetting = function()
+        return false
+      end,
+      Display = function()
+        if REPENTOGON then
+          local gameData = Isaac.GetPersistentGameData()
+          return 'The Womb: ' .. (gameData:Unlocked(Achievement.WOMB) and 'unlocked' or 'locked')
+        end
+        return 'The Womb: unknown'
+      end,
+      OnChange = function(b)
+        if REPENTOGON then
+          local gameData = Isaac.GetPersistentGameData()
+          if not gameData:Unlocked(Achievement.WOMB) then
+            gameData:TryUnlock(Achievement.WOMB, false)
+          end
+        end
+      end,
+      Info = { 'Unlock the achievement', '(requires repentogon)' }
+    }
+  )
+  ModConfigMenu.AddSpace(mod.Name, 'Mom')
+  ModConfigMenu.AddText(mod.Name, 'Mom', 'Or... run the following in the')
+  ModConfigMenu.AddText(mod.Name, 'Mom', 'debug console: achievement 4')
 end
 -- end ModConfigMenu --
 
