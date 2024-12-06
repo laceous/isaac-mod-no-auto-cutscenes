@@ -12,6 +12,11 @@ mod.state.blockCutsceneBeast = true
 mod.state.blockCutsceneMegaSatan = true
 mod.state.probabilityVoidBeast = 50
 mod.state.probabilityVoidMegaSatan = 50
+if REPENTANCE_PLUS then
+  mod.state.blockCutsceneMegaSatan = false
+  mod.state.probabilityVoidBeast = 100
+  mod.state.probabilityVoidMegaSatan = 100
+end
 
 function mod:onGameStart()
   if mod:HasData() then
