@@ -362,8 +362,8 @@ function mod:isTheBeast()
   
   return level:GetStage() == LevelStage.STAGE8 and
          roomDesc.Data.Type == RoomType.ROOM_DUNGEON and
-         roomDesc.Data.Variant == 666 and
-         roomDesc.Data.Name == 'Beast Room' and
+         roomDesc.Data.StageID == 35 and  -- home
+         roomDesc.Data.Variant == 666 and -- Beast Room, subtype=4
          (roomDesc.GridIndex == GridRooms.ROOM_SECRET_EXIT_IDX or roomDesc.GridIndex == GridRooms.ROOM_DEBUG_IDX)
 end
 
