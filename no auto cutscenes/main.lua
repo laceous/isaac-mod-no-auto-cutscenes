@@ -157,8 +157,17 @@ function mod:onPreSpawnAward()
     mod:spawnMegaSatanDoorExit()
     
     if mod.state.blockCutsceneMegaSatan then
+      --[[
+      if REPENTOGON and REPENTANCE_PLUS then
+        local gameData = Isaac.GetPersistentGameData()
+        if gameData:Unlocked(Achievement.THE_VOID) then
+          return
+        end
+      end
+      --]]
+      
       local centerIdx = room:GetGridIndex(room:GetCenterPos())
-      mod:spawnChestOrTrophy(room:GetGridPosition(centerIdx))
+      mod:spawnChestOrTrophy(room:GetCenterPos())
       
       local rng = RNG()
       rng:SetSeed(room:GetSpawnSeed(), mod.rngShiftIdx)
@@ -381,7 +390,7 @@ end
 
 -- start ModConfigMenu --
 function mod:setupModConfigMenu()
-  for _, v in ipairs({ 'Settings', 'Mom' }) do
+  for _, v in ipairs({ 'Settings', 'Mom', 'Void' }) do
     ModConfigMenu.RemoveSubcategory(mod.Name, v)
   end
   ModConfigMenu.AddSetting(
@@ -481,6 +490,39 @@ function mod:setupModConfigMenu()
   ModConfigMenu.AddSpace(mod.Name, 'Mom')
   ModConfigMenu.AddText(mod.Name, 'Mom', 'Or... run the following in the')
   ModConfigMenu.AddText(mod.Name, 'Mom', 'debug console: achievement 4')
+  ModConfigMenu.AddText(mod.Name, 'Void', 'In rep+, once you\'ve unlocked the void')
+  ModConfigMenu.AddText(mod.Name, 'Void', 'then mega satan won\'t have an')
+  ModConfigMenu.AddText(mod.Name, 'Void', 'auto-cutscene anymore.')
+  ModConfigMenu.AddSpace(mod.Name, 'Void')
+  ModConfigMenu.AddSetting(
+    mod.Name,
+    'Void',
+    {
+      Type = ModConfigMenu.OptionType.BOOLEAN,
+      CurrentSetting = function()
+        return false
+      end,
+      Display = function()
+        if REPENTOGON then
+          local gameData = Isaac.GetPersistentGameData()
+          return 'The Void: ' .. (gameData:Unlocked(Achievement.THE_VOID) and 'unlocked' or 'locked')
+        end
+        return 'The Void: unknown'
+      end,
+      OnChange = function(b)
+        if REPENTOGON then
+          local gameData = Isaac.GetPersistentGameData()
+          if not gameData:Unlocked(Achievement.THE_VOID) then
+            gameData:TryUnlock(Achievement.THE_VOID, false)
+          end
+        end
+      end,
+      Info = { 'Unlock the achievement', '(requires repentogon)' }
+    }
+  )
+  ModConfigMenu.AddSpace(mod.Name, 'Void')
+  ModConfigMenu.AddText(mod.Name, 'Void', 'Or... run the following in the')
+  ModConfigMenu.AddText(mod.Name, 'Void', 'debug console: achievement 320')
 end
 -- end ModConfigMenu --
 

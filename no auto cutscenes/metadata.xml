@@ -41,10 +41,11 @@ Mod Config Menu can be used to:
     [*]change the void portal spawning probability
     [*]apply your settings to challenges or not
     [*]unlock the womb early so you can skip the one-off cutscene after Mom (requires Repentogon)
+    [*]unlock the void early in rep+ which skips the auto-cutscene after Mega Satan (requires Repentogon)
 [/list]
 
 Note: Even if you choose to allow the Mega Satan cutscene, the game may still decide to spawn a chest and void portal instead.</description>
-    <version>1.25</version>
+    <version>1.26</version>
     <visibility>Public</visibility>
     <tag id="Lua"/>
     <tag id="Bosses"/>
