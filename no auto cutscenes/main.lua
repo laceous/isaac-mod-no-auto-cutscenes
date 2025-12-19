@@ -453,7 +453,7 @@ function mod:setupModConfigMenu()
           mod.state[v.probability] = n
           mod:save()
         end,
-        Info = { 'Default: 50%', 'Probability that a void portal spawns' }
+        Info = { 'Default: ' .. (REPENTANCE_PLUS and '100' or '50') .. '% ', 'Probability that a void portal spawns' }
       }
     )
   end
