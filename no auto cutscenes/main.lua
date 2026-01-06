@@ -167,7 +167,7 @@ function mod:onPreSpawnAward()
       --]]
       
       local centerIdx = room:GetGridIndex(room:GetCenterPos())
-      mod:spawnChestOrTrophy(room:GetCenterPos())
+      mod:spawnChestOrTrophy(REPENTANCE_PLUS and room:GetCenterPos() or room:GetGridPosition(centerIdx))
       
       local rng = RNG()
       rng:SetSeed(room:GetSpawnSeed(), mod.rngShiftIdx)
